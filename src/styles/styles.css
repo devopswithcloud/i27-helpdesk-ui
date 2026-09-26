@@ -1,0 +1,199 @@
+:root{
+  --i27-navy:#051C36;      /* brand dark blue */
+  --i27-orange:#F15E22;    /* brand orange */
+  --i27-bg:#f7f9fc;
+  --i27-text:#111827;
+  --i27-muted:#6b7280;
+  --i27-card:#ffffff;
+  --i27-border:#e5e7eb;
+}
+
+*{ box-sizing: border-box; }
+html, body{ height:100%; }
+body{
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--i27-text);
+  background: var(--i27-bg);
+}
+
+/* Navbar */
+.navbar{
+  background: #fff !important;
+  border-bottom: 1px solid var(--i27-border);
+}
+.navbar-brand{
+  font-weight: 800;
+  letter-spacing: .3px;
+  color: var(--i27-navy) !important;
+}
+.nav-link{ color: #334155 !important; }
+.nav-link:hover{ color: var(--i27-navy) !important; }
+
+/* Buttons */
+.btn-primary{
+  background: var(--i27-orange);
+  border-color: var(--i27-orange);
+}
+.btn-primary:hover{
+  filter: brightness(.95);
+}
+.btn-outline-primary{
+  color: var(--i27-orange);
+  border-color: var(--i27-orange);
+}
+.btn-outline-primary:hover{
+  background: var(--i27-orange);
+  color: #fff;
+}
+
+/* Cards */
+.card{
+  background: var(--i27-card);
+  border: 1px solid var(--i27-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(5, 28, 54, .05);
+}
+
+/* Hero */
+.hero{
+  background: radial-gradient(90% 120% at 0% 0%, rgba(241,94,34,.08), transparent 60%),
+              linear-gradient(180deg, #fff, #fff);
+  border: 1px solid var(--i27-border);
+  border-radius: 20px;
+  padding: 28px;
+}
+
+/* Badges */
+.badge{
+  text-transform: capitalize;
+  font-weight: 600;
+}
+.badge-prio-low{ background:#e7f8ee; color:#127a3d; }
+.badge-prio-medium{ background:#fff4e5; color:#a35a00; }
+.badge-prio-high{ background:#ffeeee; color:#b91c1c; }
+.badge-prio-urgent{ background:#ffe4e6; color:#9f1239; }
+.badge-status{ background:#e5f0ff; color:#183a8a; }
+
+/* Tables */
+.table thead th{
+  color:#64748b;
+  font-weight:600;
+  border-bottom:1px solid var(--i27-border);
+}
+.table td{ vertical-align: middle; }
+
+/* Footer tip (optional) */
+.footer-tip{
+  color: var(--i27-muted);
+  font-size: 12px;
+}
+
+/* Submit Ticket dropzone */
+.dropzone{
+  background: #f7fafc;
+  border: 2px dashed #d7e0ea;
+  border-radius: 14px;
+  padding: 28px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+.dropzone.dz-hover{ background:#f1f5f9; }
+.dropzone .dz-label{
+  font-weight:700;
+  color: var(--i27-navy);
+}
+.dropzone .dz-sub{
+  color: var(--i27-muted);
+  font-size: 13px;
+}
+.dropzone .dz-input{
+  position:absolute; inset:0; opacity:0; cursor:pointer;
+  height:100%; width:100%;
+}
+
+/* ---- Global layout ---- */
+.site-container {
+  max-width: 1100px;         /* sweet spot for dashboards */
+  margin: 0 auto;            /* center horizontally */
+  padding: 24px 16px;        /* comfy side padding */
+}
+
+.hd-card {
+  background: #fff;
+  border: 1px solid #e9eef3;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(16,24,40,.04);
+}
+
+/* header row with action button on the right */
+.hd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* table polish */
+.table.hd-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table.hd-table thead th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #0f172a;
+  border-bottom: 1px solid #e9eef3;
+}
+
+.table.hd-table tbody td {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* last row no heavy border */
+.table.hd-table tbody tr:last-child td {
+  border-bottom-color: transparent;
+}
+
+/* status pill */
+.badge-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #e7f0ff;
+  color: #1d4ed8;
+}
+
+/* responsive tweaks */
+@media (max-width: 640px) {
+  .hd-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+.alert {
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+/* Force i27 brand buttons */
+.btn-primary {
+  background-color: var(--i27-orange) !important;
+  border-color: var(--i27-orange) !important;
+}
+
+.btn-outline-primary {
+  color: var(--i27-orange) !important;
+  border-color: var(--i27-orange) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--i27-orange) !important;
+  color: #fff !important;
+}

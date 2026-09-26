@@ -1,0 +1,116 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import api from "@/lib/api";
+
+export default function StudentDashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const ticketCreated = searchParams.get("created");
+
+  // 🔐 Auth check
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.replace("/student/login");
+    } else {
+      setAuthChecked(true);
+    }
+  }, [router]);
+
+  // 🎉 Auto-clear success message after showing once
+  useEffect(() => {
+    if (ticketCreated) {
+      const timer = setTimeout(() => {
+        router.replace("/student/dashboard");
+      }, 2000); // 2 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [ticketCreated, router]);
+
+  // 📥 Load tickets after auth
+  useEffect(() => {
+    if (!authChecked) return;
+
+    api
+      .get("/tickets/me")
+      .then((res) => {
+        setTickets(res.data || []);
+      })
+      .catch(() => {
+        setTickets([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [authChecked]);
+
+  if (!authChecked) {
+    return null; // avoid flicker & param loss
+  }
+
+  return (
+    <main className="container py-4">
+      <h3 className="mb-3">My Dashboard</h3>
+
+      {/* ✅ Success Message */}
+      {ticketCreated && (
+        <div className="alert alert-success">
+          🎉 Ticket created successfully!
+        </div>
+      )}
+
+      {/* 🔘 Create Ticket */}
+      <div className="mb-4">
+        <button
+          className="btn btn-primary"
+          onClick={() => router.push("/student/tickets/create")}
+        >
+          Create New Ticket
+        </button>
+      </div>
+
+      {/* 📋 Tickets */}
+      <h5 className="mb-3">My Tickets</h5>
+
+      {loading && <p>Loading tickets...</p>}
+
+      {!loading && tickets.length === 0 && (
+        <div className="alert alert-info">
+          You haven’t raised any tickets yet.
+        </div>
+      )}
+
+      {!loading &&
+        tickets.map((ticket) => (
+          <div key={ticket.id} className="card mb-3 p-3">
+            <h6 className="mb-1">{ticket.title}</h6>
+            <p className="text-muted mb-2">{ticket.description}</p>
+
+            <div className="d-flex justify-content-between align-items-center">
+              <span className="badge bg-secondary">
+                {ticket.status || "OPEN"}
+              </span>
+
+              <button
+                className="btn btn-sm btn-outline-primary"
+                onClick={() =>
+                  router.push(`/student/tickets/${ticket.id}`)
+                }
+              >
+                View Details
+              </button>
+            </div>
+          </div>
+        ))}
+    </main>
+  );
+}

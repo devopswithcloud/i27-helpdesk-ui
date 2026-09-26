@@ -1,0 +1,67 @@
+export default function HomePage() {
+  return (
+    <main className="container py-5">
+
+      {/* HERO */}
+      <div
+        className="card p-5 text-center mb-5"
+        style={{ background: "linear-gradient(180deg,#fff,#fff7f2)" }}
+      >
+        <h1 className="mb-3 fw-bold" style={{ color: "#051C36" }}>
+          i27Academy Helpdesk
+        </h1>
+
+        <p className="text-muted fs-5 mb-4">
+          Dedicated support system for enrolled i27Academy students.
+        </p>
+      </div>
+
+      {/* INFO GRID */}
+      <div className="row g-4">
+
+        <div className="col-md-4">
+          <div className="card p-4 h-100 text-center">
+            <h5 className="mb-2" style={{ color: "#051C36" }}>
+              🎓 Only for Students
+            </h5>
+            <p className="text-muted mb-0">
+              Tickets can be raised only by authenticated i27Academy students.
+              This ensures faster and accurate support.
+            </p>
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="card p-4 h-100 text-center">
+            <h5 className="mb-2" style={{ color: "#051C36" }}>
+              🛠 Structured Support
+            </h5>
+            <p className="text-muted mb-0">
+              Every ticket is tracked, assigned, and resolved with proper
+              visibility and updates.
+            </p>
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="card p-4 h-100 text-center">
+            <h5 className="mb-2" style={{ color: "#051C36" }}>
+              🔐 Secure Access
+            </h5>
+            <p className="text-muted mb-0">
+              Login credentials are provided during enrollment to keep the
+              system secure and spam-free.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      {/* FOOT NOTE */}
+      <div className="text-center mt-5 text-muted small">
+        © {new Date().getFullYear()} i27Academy · Internal Support Platform
+      </div>
+
+    </main>
+  );
+}

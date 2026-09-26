@@ -1,0 +1,320 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import api from "@/lib/api";
+
+export default function AgentTicketDetailsPage() {
+  const { id } = useParams();
+  const router = useRouter();
+
+  const [ticket, setTicket] = useState<any>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // 💬 COMMENTS
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+
+  // 👤 COMMENT USER CACHE
+  const [commentUsers, setCommentUsers] = useState<Record<number, any>>({});
+
+  /* 🔐 AGENT AUTH GUARD */
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userRaw = localStorage.getItem("user");
+
+    if (!token || !userRaw) {
+      router.replace("/support/login");
+      return;
+    }
+
+    const user = JSON.parse(userRaw);
+    if (!user.roles?.includes("AGENT")) {
+      router.replace("/");
+    }
+  }, [router]);
+
+  /* 📥 LOAD TICKET */
+  useEffect(() => {
+    if (!id) return;
+
+    const loadTicket = async () => {
+      try {
+        const ticketRes = await api.get(`/tickets/${id}`);
+        const ticketData = ticketRes.data;
+
+        let createdByName = `User #${ticketData.createdBy}`;
+        try {
+          const userRes = await api.get(`/auth/users/${ticketData.createdBy}`);
+          createdByName =
+            userRes.data.fullName ||
+            userRes.data.email ||
+            createdByName;
+        } catch {}
+
+        setTicket({ ...ticketData, createdByName });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTicket();
+  }, [id]);
+
+  /* 🕒 LOAD ACTIVITIES */
+  const loadActivities = async () => {
+    if (!id) return;
+    const res = await api.get(`/tickets/${id}/activities`);
+    setActivities(res.data || []);
+  };
+
+  useEffect(() => {
+    loadActivities();
+  }, [id]);
+
+  /* 💬 LOAD COMMENTS + RESOLVE USER NAMES */
+  useEffect(() => {
+    if (!id) return;
+
+    api.get(`/comments/${id}`)
+      .then(async res => {
+        const data = res.data || [];
+        setComments(data);
+        setCommentsError(null);
+
+        const userIds = [...new Set(data.map((c: any) => c.commented_by))];
+        const missing = userIds.filter(uid => !commentUsers[uid]);
+
+        if (missing.length > 0) {
+          const responses = await Promise.allSettled(
+            missing.map(uid =>
+              api.get(`/auth/admin/users/${uid}`)
+                .catch(() => api.get(`/auth/users/${uid}`))
+            )
+          );
+
+          const resolved: Record<number, any> = {};
+          responses.forEach((r, i) => {
+            if (r.status === "fulfilled") {
+              resolved[missing[i]] = r.value.data;
+            }
+          });
+
+          setCommentUsers(prev => ({ ...prev, ...resolved }));
+        }
+      })
+      .catch(() => {
+        setComments([]);
+        setCommentsError("Comments service unavailable");
+      });
+  }, [id]);
+
+  /* 🔁 UPDATE STATUS / PRIORITY */
+  const updateTicket = async (updates: any) => {
+    setSaving(true);
+    try {
+      await api.put(`/tickets/${id}`, updates);
+
+      const res = await api.get(`/tickets/${id}`);
+      setTicket(prev => ({
+        ...res.data,
+        createdByName: prev?.createdByName,
+      }));
+
+      await loadActivities();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* ➕ ADD COMMENT (AGENT) */
+  const postComment = async () => {
+    if (!newComment.trim()) return;
+
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+    setPosting(true);
+    try {
+      const res = await api.post("/comments", {
+        ticket_id: Number(id),
+        commented_by: user.userId,
+        commented_by_role: "AGENT",
+        comment: newComment.trim(),
+      });
+
+      setComments(prev => [...prev, res.data]);
+      setNewComment("");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const actionIcon = (action: string) => {
+    switch (action) {
+      case "CREATED":
+        return "🟢";
+      case "STATUS_CHANGED":
+        return "🔄";
+      case "PRIORITY_CHANGED":
+        return "⚡";
+      default:
+        return "⚪";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-5 text-center text-muted">
+        Loading ticket details...
+      </div>
+    );
+  }
+
+  if (!ticket) {
+    return (
+      <div className="p-5 text-center text-muted">
+        Ticket not found
+      </div>
+    );
+  }
+
+  return (
+    <main className="bg-light min-vh-100 py-4">
+      <div className="container" style={{ maxWidth: "1100px" }}>
+
+        {/* 🔙 BACK */}
+        <button
+          className="btn btn-sm btn-outline-secondary mb-3"
+          onClick={() => router.push("/agent/dashboard")}
+        >
+          ← Back to Dashboard
+        </button>
+
+        {/* 🧭 HEADER */}
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <h4>Ticket #{ticket.id}</h4>
+            <p className="text-muted mb-0">
+              Created by <strong>{ticket.createdByName}</strong>
+            </p>
+          </div>
+        </div>
+
+        {/* 📝 DETAILS */}
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <h5>{ticket.title}</h5>
+            <p className="text-muted">{ticket.description}</p>
+
+            <div className="row g-3">
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Status</label>
+                <select
+                  className="form-select"
+                  value={ticket.status}
+                  disabled={saving}
+                  onChange={(e) =>
+                    updateTicket({ status: e.target.value })
+                  }
+                >
+                  <option value="OPEN">OPEN</option>
+                  <option value="IN_PROGRESS">IN_PROGRESS</option>
+                  <option value="CLOSED">CLOSED</option>
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Priority</label>
+                <select
+                  className="form-select"
+                  value={ticket.priority}
+                  disabled={saving}
+                  onChange={(e) =>
+                    updateTicket({ priority: e.target.value })
+                  }
+                >
+                  <option value="LOW">LOW</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="HIGH">HIGH</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 🕒 ACTIVITY */}
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <h6 className="mb-3">Activity Timeline</h6>
+            <ul className="list-unstyled">
+              {activities.map((a: any) => (
+                <li key={a.id} className="mb-3">
+                  <div className="fw-semibold">
+                    {actionIcon(a.action)} {a.message}
+                  </div>
+                  <small className="text-muted">
+                    {new Date(a.createdAt).toLocaleString()}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* 💬 COMMENTS */}
+        <div className="card shadow-sm">
+          <div className="card-body">
+            <h6 className="mb-3">Comments</h6>
+
+            {commentsError && (
+              <div className="alert alert-warning">{commentsError}</div>
+            )}
+
+            {comments.map((c: any) => {
+              const u = commentUsers[c.commented_by];
+              return (
+                <div key={c.id} className="border rounded p-3 mb-3 bg-white">
+                  <div className="d-flex justify-content-between mb-1">
+                    <div>
+                      <strong>
+                        {u?.fullName || `User #${c.commented_by}`}
+                      </strong>
+                      <span className="badge bg-secondary ms-2">
+                        {c.commented_by_role}
+                      </span>
+                    </div>
+                    <small className="text-muted">
+                      {new Date(c.created_at).toLocaleString()}
+                    </small>
+                  </div>
+                  <div>{c.comment}</div>
+                </div>
+              );
+            })}
+
+            <textarea
+              className="form-control mb-2"
+              rows={3}
+              placeholder="Add a comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+            />
+
+            <button
+              className="btn btn-primary"
+              disabled={posting || !newComment.trim()}
+              onClick={postComment}
+            >
+              {posting ? "Posting..." : "Add Comment"}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  );
+}

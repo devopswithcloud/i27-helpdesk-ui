@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get("token");
+  const pathname = request.nextUrl.pathname;
+
+  // ✅ Allow login page without token
+  if (pathname === "/student/login") {
+    return NextResponse.next();
+  }
+
+  // 🔒 Protect all other student routes
+  if (pathname.startsWith("/student") && !token) {
+    return NextResponse.redirect(
+      new URL("/student/login", request.url)
+    );
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/student/:path*"],
+};

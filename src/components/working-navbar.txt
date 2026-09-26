@@ -1,0 +1,76 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+
+export default function Navbar() {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [student, setStudent] = useState<any>(null);
+
+  // 🔁 Re-check login state on route change
+  useEffect(() => {
+    const storedStudent = localStorage.getItem("student");
+    if (storedStudent) {
+      setStudent(JSON.parse(storedStudent));
+    } else {
+      setStudent(null);
+    }
+  }, [pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("student");
+    router.push("/");
+  };
+
+  return (
+    <nav className="nav-bar">
+      <div className="nav-inner d-flex justify-content-between align-items-center">
+        
+        {/* ✅ LEFT: BRANDING */}
+        <div
+          className="brand"
+          style={{ cursor: "default", fontWeight: 700 }}
+        >
+          i27<span style={{ color: "#F15E22" }}>Helpdesk</span>
+        </div>
+
+        {/* ✅ RIGHT: ACTIONS */}
+        <div className="nav-actions d-flex align-items-center gap-3">
+          {!student ? (
+            <>
+              <button
+                className="btn btn-outline-primary"
+                onClick={() => router.push("/student/login")}
+              >
+                Student Login
+              </button>
+
+              <button
+                className="btn btn-primary"
+                onClick={() => router.push("/agent/login")}
+              >
+                Agent/Admin Login
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="fw-semibold">
+                👋 {student.fullName}
+              </span>
+
+              <button
+                className="btn btn-outline-danger"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+}

@@ -1,0 +1,206 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import api from "@/lib/api";
+
+export default function StudentTicketDetailsPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+
+  const [ticket, setTicket] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // 💬 COMMENTS
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+
+  // 👤 COMMENT USER CACHE
+  const [commentUsers, setCommentUsers] = useState<Record<number, any>>({});
+
+  /* 🔐 STUDENT AUTH GUARD */
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userRaw = localStorage.getItem("user");
+
+    if (!token || !userRaw) {
+      router.replace("/student/login");
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userRaw);
+      if (!user.roles?.includes("USER")) {
+        router.replace("/");
+      }
+    } catch {
+      router.replace("/student/login");
+    }
+  }, [router]);
+
+  /* 📥 LOAD TICKET (ONLY OWN TICKET) */
+  useEffect(() => {
+    if (!id) return;
+
+    const loadTicket = async () => {
+      try {
+        const res = await api.get(`/tickets/${id}`);
+        setTicket(res.data);
+      } catch {
+        setTicket(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTicket();
+  }, [id]);
+
+  /* 💬 LOAD COMMENTS + RESOLVE USERS */
+  useEffect(() => {
+    if (!id) return;
+
+    api
+      .get(`/comments/${id}`)
+      .then(async (res) => {
+        const data = res.data || [];
+        setComments(data);
+        setCommentsError(null);
+
+        const userIds = [...new Set(data.map((c: any) => c.commented_by))];
+        const missing = userIds.filter((uid) => !commentUsers[uid]);
+
+        if (missing.length > 0) {
+          const responses = await Promise.allSettled(
+            missing.map((uid) => api.get(`/auth/users/${uid}`))
+          );
+
+          const resolved: Record<number, any> = {};
+          responses.forEach((r, i) => {
+            if (r.status === "fulfilled") {
+              resolved[missing[i]] = r.value.data;
+            }
+          });
+
+          setCommentUsers((prev) => ({ ...prev, ...resolved }));
+        }
+      })
+      .catch(() => {
+        setComments([]);
+        setCommentsError("Comments unavailable");
+      });
+  }, [id, commentUsers]);
+
+  /* ➕ ADD COMMENT (STUDENT) */
+  const postComment = async () => {
+    if (!newComment.trim() || !id) return;
+
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+    setPosting(true);
+    try {
+      const res = await api.post("/comments", {
+        ticket_id: Number(id),
+        commented_by: user.userId,
+        commented_by_role: "USER",
+        comment: newComment.trim(),
+      });
+
+      setComments((prev) => [...prev, res.data]);
+      setNewComment("");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-5 text-center text-muted">Loading ticket...</div>;
+  }
+
+  if (!ticket) {
+    return <div className="p-5 text-center text-muted">Ticket not found</div>;
+  }
+
+  return (
+    <main className="bg-light min-vh-100 py-4">
+      <div className="container" style={{ maxWidth: "900px" }}>
+        {/* 🔙 BACK */}
+        <button
+          className="btn btn-sm btn-outline-secondary mb-3"
+          onClick={() => router.push("/student/dashboard")}
+        >
+          ← Back to Dashboard
+        </button>
+
+        {/* 🧾 TICKET */}
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <h4 className="mb-1">Ticket #{ticket.id}</h4>
+            <h6 className="mt-3">{ticket.title}</h6>
+            <p className="text-muted">{ticket.description}</p>
+
+            <span className="badge bg-primary me-2">{ticket.status}</span>
+            <span className="badge bg-secondary">
+              Priority {ticket.priority}
+            </span>
+          </div>
+        </div>
+
+        {/* 💬 COMMENTS */}
+        <div className="card shadow-sm">
+          <div className="card-body">
+            <h6 className="mb-3">Comments</h6>
+
+            {commentsError && (
+              <div className="alert alert-warning">{commentsError}</div>
+            )}
+
+            {comments.map((c: any) => {
+              const u = commentUsers[c.commented_by];
+
+              return (
+                <div key={c.id} className="border rounded p-3 mb-3 bg-white">
+                  <div className="d-flex justify-content-between mb-1">
+                    <div>
+                      <strong>
+                        {u?.fullName || `User #${c.commented_by}`}
+                      </strong>
+                      <span className="badge bg-secondary ms-2">
+                        {c.commented_by_role}
+                      </span>
+                    </div>
+                    <small className="text-muted">
+                      {new Date(c.created_at).toLocaleString()}
+                    </small>
+                  </div>
+                  <div>{c.comment}</div>
+                </div>
+              );
+            })}
+
+            {/* ADD COMMENT */}
+            <textarea
+              className="form-control mb-2"
+              rows={3}
+              placeholder="Add a comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+            />
+
+            <div className="text-end">
+              <button
+                className="btn btn-primary"
+                disabled={posting || !newComment.trim()}
+                onClick={postComment}
+              >
+                {posting ? "Posting..." : "Add Comment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
