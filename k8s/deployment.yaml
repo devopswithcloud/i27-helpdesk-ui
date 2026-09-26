@@ -17,7 +17,7 @@ spec:
       containers:
         - name: i27-ui
           image: ${IMAGE}   # substituted by envsubst in CI, e.g. devopswithcloudhub/i27helpdesk-ui:dev-<git-sha>
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           # envFrom:
