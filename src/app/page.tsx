@@ -51,7 +51,7 @@ export default function HomePage() {
         <h1 className="text-4xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
           Support made{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-[#051C36]">
-            simple & faster
+            simple & faster b10
           </span>
         </h1>
 
